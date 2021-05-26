@@ -9,15 +9,14 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.concurrent.CompletionStage;
 
-//todo !!!!!!!!!!!!!
 @ApplicationScoped
-@Path("/someone")
+@Path("/external")
 @RegisterRestClient
 @RegisterClientHeaders
-public interface SomeoneElseMaybeResourceClient
+public interface ExternalResourceClient
 {
     @GET
-    @Path("/maybe")
+    @Path("/one")
     @Produces(MediaType.TEXT_PLAIN)
-    CompletionStage<String> maybeYesOrNot();
+    CompletionStage<Integer> getOne();
 }
