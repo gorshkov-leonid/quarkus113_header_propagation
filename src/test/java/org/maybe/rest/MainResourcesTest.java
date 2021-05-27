@@ -11,14 +11,31 @@ import static io.restassured.RestAssured.given;
 public class MainResourcesTest
 {
     @Test
-    void test()
+    void test1()
+    {
+        testOperation("/main-service/v1", 3);
+    }
+
+    @Test
+    void test2()
+    {
+        testOperation("/main-service/v2", 3);
+    }
+
+    @Test
+    void test3()
+    {
+        testOperation("/main-service/v3", 3);
+    }
+
+    private void testOperation(String uri, Integer expected)
     {
         Response resp = given()
                 .when()
                 .header("Authorization", "auth-token")
-                .get("/main-service")
+                .get(uri)
                 .then().extract().response();
 
-        MatcherAssert.assertThat(resp.statusCode() + " " + resp.asString(), Matchers.is("200 final result is 3"));
+        MatcherAssert.assertThat(resp.statusCode() + " " + resp.asString(), Matchers.is("200 final result is " + expected));
     }
 }

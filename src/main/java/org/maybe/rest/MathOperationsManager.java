@@ -10,6 +10,8 @@ import javax.ws.rs.core.*;
 import java.util.Optional;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 @ApplicationScoped
 public class MathOperationsManager
 {
@@ -23,40 +25,61 @@ public class MathOperationsManager
     @RestClient
     ExternalResourceClient externalClient;
 
-    public CompletionStage<Response> doMathOperation()
+
+    public CompletionStage<Response> doMathOperation1()
     {
-        CompletableFuture<Integer> f1 = getOne().toCompletableFuture();
-        CompletableFuture<Integer> f2 = getOne().toCompletableFuture();
-        return CompletableFuture.allOf(f1, f2)
-                .thenComposeAsync(
-                        ignored -> {
-                            Integer v1 = f1.join();
-                            Integer v2 = f1.join();
-                            return getOne()
-                                    .thenApplyAsync(
-                                            v3 -> {
-                                                return v1 + v2 + v3;
-                                            },
-                                            executor
-                                    );
-                        },
-                        executor
-                )
-                .thenApplyAsync(
-                        res ->
-                                Optional
-                                        .ofNullable(ResteasyContext.getContextData(HttpHeaders.class))
-                                        .map(headers -> headers.getHeaderString("Authorization"))
-                                        .map(
-                                                authToken -> Response.ok("final result is " + res).build()
-                                        )
-                                        .orElse(Response.status(401).entity("not authorized in main resource after call of external resource").build()),
-                        executor
-                );
+        return threadContext.withContextCapture(
+                //threadContext.withContextCapture(
+                externalClient.getOne()
+                        //)
+                        .thenApplyAsync(one -> one * 3, executor)
+                        .thenComposeAsync(
+                                res -> completedFuture(checkResultAndReturn(res)),
+                                executor
+                        )
+        );
     }
 
-    private CompletionStage<Integer> getOne()
+    public CompletionStage<Response> doMathOperation2()
     {
-        return threadContext.withContextCapture(externalClient.getOne());
+        CompletableFuture<Integer> f1 = threadContext.withContextCapture(externalClient.getOne()).toCompletableFuture();
+        CompletableFuture<Integer> f2 = threadContext.withContextCapture(externalClient.getOne()).toCompletableFuture();
+        return
+                //threadContext.withContextCapture(
+                CompletableFuture.allOf(f1, f2)
+                        //)
+                        .thenApplyAsync(ignored -> f1.join() + f2.join() + 1, executor)
+                        .thenApplyAsync(
+                                this::checkResultAndReturn,
+                                executor
+                        );
+    }
+
+    public CompletionStage<Response> doMathOperation3()
+    {
+        return threadContext.withContextCapture(
+                //threadContext.withContextCapture(
+                CompletableFuture.supplyAsync(() -> 3, executor)
+                        //)
+                        .thenComposeAsync(
+                                multiplier -> externalClient.getOne().thenApplyAsync(one -> multiplier * one, executor),
+                                executor
+                        )
+                        .thenComposeAsync(
+                                res -> completedFuture(checkResultAndReturn(res)),
+                                executor
+                        )
+        );
+    }
+
+    private Response checkResultAndReturn(Integer res)
+    {
+        return Optional
+                .ofNullable(ResteasyContext.getContextData(HttpHeaders.class))
+                .map(headers -> headers.getHeaderString("Authorization"))
+                .map(
+                        authToken -> Response.ok("final result is " + res).build()
+                )
+                .orElse(Response.status(401).entity("not authorized in main resource after call of external resource").build());
     }
 }

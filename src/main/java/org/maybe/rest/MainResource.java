@@ -18,8 +18,25 @@ public class MainResource
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public CompletionStage<Response> call()
+    @Path("/v1")
+    public CompletionStage<Response> op1()
     {
-        return threadContext.withContextCapture(mathOperationsManager.doMathOperation());
+        return threadContext.withContextCapture(mathOperationsManager.doMathOperation1());
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/v2")
+    public CompletionStage<Response> op2()
+    {
+        return threadContext.withContextCapture(mathOperationsManager.doMathOperation2());
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/v3")
+    public CompletionStage<Response> op3()
+    {
+        return threadContext.withContextCapture(mathOperationsManager.doMathOperation3());
     }
 }
